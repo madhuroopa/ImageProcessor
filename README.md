@@ -25,6 +25,7 @@ Connectors: Connectors are used to connect the components and allow them to comm
 
 This whole system can be envisioned as the one which has to execute several steps to process the data. These steps can be configured using one architecture style “Pipe and Filter”. This is an architectural style, which consists of nodes or components known as filters which are connected by connectors known as pipes. The filters act on the data i.e., they perform data processing, whereas, pipes transport the data. Pipes represent channels which transport data using a particular protocol. for instance, HTTP or FTP etc. Filters represent processing units which act upon the input data and generate a result, which is fed to the output channel.
 In this application filters act on image uploaded and transforms according to each operation where as pipes transfers the applied filter image to next stage for next image operation.
+![image](https://user-images.githubusercontent.com/22576343/222319714-74fa3c91-59dd-4038-a518-191fea5c8663.png)
 
  ## Little Language
 The "little language" for constructing image processing requests can be a JSON payload in a POST request to the API
