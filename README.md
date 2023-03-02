@@ -11,7 +11,7 @@ Operations:
 •	Generate a thumbnail
 •	Rotate left
 •	Rotate right
-### Architectural Overview
+## Architectural Overview
 
 ## Components of Image Processor Application:
 
