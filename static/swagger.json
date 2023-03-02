@@ -1,0 +1,139 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Image Processor",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000"
+    }
+  ],
+  "paths": {
+    "/process_image": {
+      "post": {
+        "summary": "Process image with specified operations",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "json_file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "image_file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "operations": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": [
+                        "flip_horizontal",
+                        "flip_vertical",
+                        "rotate_left",
+                        "rotate_right",
+                        "grayscale",
+                        "thumbnail",
+                        "rotate",
+                        "resize"
+                      ]
+                    }
+                  },
+                  "angle": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "height": {
+                    "type": "integer",
+                    "format": "int32"
+                  }
+                },
+                "required": [
+                  "image_file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "Success": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unknown error occurred"
+          }
+        },
+        "x-jsonrpc-endpoint": "ImageProcessor.process"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ImageProcessor.process": {
+        "type": "object",
+        "properties": {
+          "image_data": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "flip_horizontal",
+                    "flip_vertical",
+                    "rotate_left",
+                    "rotate_right",
+                    "grayscale",
+                    "thumbnail",
+                    "rotate",
+                    "resize"
+                  ]
+                },
+                "angle": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "width": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "height": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "image_data",
+          "operations"
+        ]
+      }
+    }
+  }
+}

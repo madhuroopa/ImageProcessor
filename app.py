@@ -1,106 +1,154 @@
+import base64
 import os
+import uuid
+from typing import List, Optional
 
-from flask import Flask, request, jsonify, flash, render_template
-import io
+import requests
 from PIL import Image
-from werkzeug.utils import secure_filename
+from apispec import APISpec
+from flask import Flask, render_template, request, json
+from jsonrpc import JSONRPCResponseManager, dispatcher
+from flask_jsonrpc import JSONRPC
 
+from flask_swagger_ui import get_swaggerui_blueprint
+import io
+from flask_cors import CORS
 app = Flask(__name__)
-ROOT_DIR =  os.path.dirname(os.path.abspath(__file__))
+CORS(app, resources={r"/*": {"origins": "*"}})
+SWAGGER_URL = '/api/docs'  # URL for exposing Swagger UI (without trailing '/')
+API_URL = '/static/swagger.json'
+swaggerui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,  # Swagger UI static files will be mapped to '{SWAGGER_URL}/dist/'
+    API_URL,
+    config={  # Swagger UI config overrides
+        'app_name': "Test application"
+    },
+    # oauth_config={  # OAuth config. See https://github.com/swagger-api/swagger-ui#oauth2-configuration .
+    #    'clientId': "your-client-id",
+    #    'clientSecret': "your-client-secret-if-required",
+    #    'realm': "your-realms",
+    #    'appName': "your-app-name",
+    #    'scopeSeparator': " ",
+    #    'additionalQueryStringParams': {'test': "hello"}
+    # }
+)
+
+app.register_blueprint(swaggerui_blueprint)
+jsonrpc = JSONRPC(app, "/", enable_web_browsable_api=True)
+
+class ImageProcessor:
+    @staticmethod
+    @jsonrpc.method("ImageProcessor.process")
+    def process(image_data: str, operations: List[dict]) -> str:
+        image_bytes = base64.b64decode(image_data)
+        image = Image.open(io.BytesIO(image_bytes))
+        for operation in operations:
+            if operation['type'] == 'flip_horizontal':
+                image = image.transpose(Image.FLIP_LEFT_RIGHT)
+            elif operation['type'] == 'flip_vertical':
+                image = image.transpose(Image.FLIP_TOP_BOTTOM)
+            elif operation['type'] == 'rotate_left':
+                image = image.rotate(90, expand=True)
+            elif operation['type'] == 'rotate_right':
+                image = image.rotate(-90, expand=True)
+            elif operation['type'] == 'rotate':
+                angle = operation['angle']
+                image = image.rotate(-1 * angle, expand=True)
+            elif operation['type'] == 'grayscale':
+                image = image.convert('L')
+            elif operation['type'] == 'resize':
+                width = operation['width']
+                height = operation['height']
+                size = (width, height)
+                image = image.resize(size, resample=Image.Resampling.BICUBIC)
+            elif operation['type'] == 'thumbnail':
+                thumbnail_image = image.copy()
+
+                thumbnail_image.thumbnail([300,300],resample=0)
+                thumbnail_name = str(uuid.uuid4()) + 'Thumbnail.jpg'  # generate random name for the output image
+                thumbnail_image.save(thumbnail_name)
+
+        output_data = io.BytesIO()
+        output_name = str(uuid.uuid4()) + 'final.jpg'  # generate random name for the output image
+        image.save(output_name)
+
+        output_data.seek(0)
+        output_str = base64.b64encode(output_data.getvalue()).decode('utf-8')
+        return "Success"
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 
-UPLOAD_FOLDER = os.path.join(ROOT_DIR, 'static/images/')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif','bmp'}
-app.secret_key = "secret key"
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-@app.route("/")
-def main():
-    return render_template("index.html")
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-@app.route("/upload", methods=['POST'])
-def upload_file():
-    filename = ''
-    if request.method == 'POST':
-        # check if the post request has the file part
-        if 'file' not in request.files:
-            flash('No file part')
-            resp = jsonify({'message': 'No file part in the request'})
-            resp.status_code = 400
-
-            return resp
-
-        file = request.files['file']
-        # If the user does not select a file, the browser submits an
-        # empty file without a filename.
-        if file.filename == '':
-            resp = jsonify({'message': 'No file selected for uploading'})
-            resp.status_code = 400
-            return resp
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(UPLOAD_FOLDER, filename))
-            print(f"{filename} uploaded")
-            resp = jsonify({'message': 'File successfully uploaded'})
-            resp.status_code = 201
-            return render_template("image_editor.html",message="File successfully uploaded",image_name=filename)
-        else:
-            resp = jsonify({'message': 'Allowed file types are png, jpg, jpeg, gif'})
-            resp.status_code = 400
-            return resp
-
-@app.route('/image_process', methods=['POST'])
+@app.route('/process_image', methods=['POST'])
 def process_image():
-    # Get binary image file from request
-    ##image_file = request.files.get('image')
-    ##image = Image.open(io.BytesIO(image_file.read()))
-    ##filename = request.form['image']
-    filename = request.json.get('filename')
-    target = os.path.join(ROOT_DIR, 'static/images')
-    destination = "/".join([target, filename])
-    image = Image.open(destination)
-    # Get operations from JSON payload
-    operations = request.json.get('operations', [])
-    resize = request.json.get('resize', None)
-    thumbnail_size = request.json.get('thumbnail_size', None)
-    rotate=request.json.get('rotate_angle',None)
 
-    # Apply operations
-    for op in operations:
-        if op == 'flip_horizontal':
-            image = image.transpose(Image.FLIP_LEFT_RIGHT)
-        elif op == 'flip_vertical':
-            image = image.transpose(Image.FLIP_TOP_BOTTOM)
-        elif op == 'rotate_left':
-            image = image.rotate(-90)
-        elif op == 'rotate_right':
-            image = image.rotate(90)
-        elif op == 'grayscale':
-            image = image.convert('L')
-    if rotate:
-        image=image.rotate(-1*int(rotate))
+    json_file = request.files['json_file']
+    image_file = request.files['image_file']
+    image_data = image_file.read()
+    if json_file:
+        json_data = json_file.read()
+        # Parse the JSON data to extract the required parameters
+        json_obj = json.loads(json_data)
 
-    # Resize image if requested
-    if resize:
-        image = image.resize(resize)
+        operations = json_obj['operations']
+    else:
+        operations = []
+        operations_list=request.form.getlist('operations[]')
+        print(operations_list)
+        if 'flip_horizontal' in operations_list:
+            operations.append({'type': 'flip_horizontal'})
+        if 'flip_vertical' in operations_list:
+            operations.append({'type': 'flip_vertical'})
+        if 'rotate_left' in operations_list:
+            operations.append({'type': 'rotate_left'})
+        if 'rotate_right' in operations_list:
+            operations.append({'type': 'rotate_right'})
+        if 'grayscale' in operations_list:
+            operations.append({'type': 'grayscale'})
+        if 'thumbnail' in operations_list:
+            operations.append({'type': 'thumbnail'})
+        if 'rotate' in operations_list:
+            operations.append({'type': 'rotate', 'angle': int(request.form['angle'])})
+        if 'resize' in operations_list:
+            operations.append(
+                {'type': 'resize', 'width': int(request.form['width']), 'height': int(request.form['height'])})
 
-    # Generate thumbnail if requested
-    if thumbnail_size:
-        image.thumbnail(thumbnail_size)
-    destination = "/".join([target, 'temp.png'])
-    if os.path.isfile(destination):
-        os.remove(destination)
-    image.save(destination)
-    resp = jsonify({'message': 'image successfully saved'})
-    resp.status_code = 201
-    # Return processed image as binary file
-    ##image_io = io.BytesIO()
-    #image.save(image_io, 'JPEG')
-    #image_io.seek(0)
-    #return send_file(image_io, mimetype='image/jpeg')
-    return resp
+
+
+
+    print(operations)
+
+
+    rpc_request = {
+        "jsonrpc": "2.0",
+        "method": "ImageProcessor.process",
+        "params": {
+            "image_data": base64.b64encode(image_data).decode('utf-8'),
+            "operations": operations
+
+        },
+
+        "id": 1,
+    }
+    print(rpc_request)
+    r = requests.post('http://localhost:5000/', json=rpc_request)
+
+    response = r.json()
+    print(response)
+    result = response.get('result')
+    print(result)
+    if result=="Success":
+        return result
+    else:
+        error = response.get('error')
+        if error is not None:
+            message = error.get('message')
+            return f"Error: {message}"
+        else:
+            return "Unknown error"
+
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

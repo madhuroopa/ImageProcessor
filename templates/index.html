@@ -1,5 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
+
+<html>
 
 <head>
     <title>Image Processor Application</title>
@@ -10,8 +10,12 @@
 
     <link href="../static/style.css" rel="stylesheet">
 
-
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jQuery-Validation-Engine/2.6.4/jquery.validationEngine.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jQuery-Validation-Engine/2.6.4/languages/jquery.validationEngine-en.min.js"></script>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jQuery-Validation-Engine/2.6.4/validationEngine.jquery.min.css">
 </head>
+
 
 <body>
     <div class="container">
@@ -19,16 +23,35 @@
 
             <h3 class="text-muted"> Image Processor Application</h3>
         </div>
-
+        <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
         <div class="jumbotron">
             <h1>Upload your image</h1>
+            <form id="image_form" action="{{ url_for('process_image') }}" enctype="multipart/form-data" method="POST">
             <p class="lead"></p>
-	       <form id="upload-form" action="{{ url_for('upload_file') }}" method="POST" enctype="multipart/form-data">
-            <input id="file-upload" type="file" name="file" accept="image/*" class="hidden" onchange="this.form.submit()">
-            <label for="file-upload" class="btn btn-lg btn-success">Select file</label>
+            Image File<br><input type="file" name="image_file" required><br>
+           JSON Input<br> <input type="file" name="json_file">
+            <input type="checkbox" name="operations[]" value="flip_horizontal">Flip Horizontal<br>
+            <input type="checkbox" name="operations[]" value="flip_vertical">Flip Vertical<br>
+            <input type="checkbox" name="operations[]" value="rotate_left">Rotate Left<br>
+            <input type="checkbox" name="operations[]" value="rotate_right">Rotate Right<br>
+
+            <input type="checkbox" name="operations[]"value="rotate">Rotate angle<br>
+             rotate angle<br><input type="number" name="angle" ><br>
+            <input type="checkbox" name="operations[]" value="grayscale">Grayscale<br>
+            <input type="checkbox" name="operations[]" value="resize">Resize
+
+            <br>Width</br><input type="number" name="width" id="width">
+
+           <br> Height<br><input type="number" name="height" id="height"><br>
+            <input type="checkbox" name="operations[]" value="thumbnail">Generate Thumbnail<br>
+            <input type="submit" value="Process">
+
 		 </form>
         </div>
     </div>
-</body>
+    <div id="output">
+      <h2>Output</h2>
+      <img id="output_image" src="">
+  </div>
 
-</html>
+</body>
