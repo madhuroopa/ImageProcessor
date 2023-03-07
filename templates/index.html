@@ -30,28 +30,24 @@
             <p class="lead"></p>
             Image File<br><input type="file" name="image_file" required><br>
            JSON Input<br> <input type="file" name="json_file">
-            <input type="checkbox" name="operations[]" value="flip_horizontal">Flip Horizontal<br>
-            <input type="checkbox" name="operations[]" value="flip_vertical">Flip Vertical<br>
-            <input type="checkbox" name="operations[]" value="rotate_left">Rotate Left<br>
-            <input type="checkbox" name="operations[]" value="rotate_right">Rotate Right<br>
+            <input type="checkbox" name="operation[]" value="flip_horizontal">Flip Horizontal<br>
+            <input type="checkbox" name="operation[]" value="flip_vertical">Flip Vertical<br>
+            <input type="checkbox" name="operation[]" value="rotate_left">Rotate Left<br>
+            <input type="checkbox" name="operation[]" value="rotate_right">Rotate Right<br>
 
-            <input type="checkbox" name="operations[]"value="rotate">Rotate angle<br>
+            <input type="checkbox" name="operation[]"value="rotate">Rotate angle<br>
              rotate angle<br><input type="number" name="angle" ><br>
-            <input type="checkbox" name="operations[]" value="grayscale">Grayscale<br>
-            <input type="checkbox" name="operations[]" value="resize">Resize
+            <input type="checkbox" name="operation[]" value="grayscale">Grayscale<br>
+            <input type="checkbox" name="operation[]" value="resize">Resize
 
             <br>Width</br><input type="number" name="width" id="width">
 
            <br> Height<br><input type="number" name="height" id="height"><br>
-            <input type="checkbox" name="operations[]" value="thumbnail">Generate Thumbnail<br>
+            <input type="checkbox" name="operation[]" value="thumbnail">Generate Thumbnail<br>
             <input type="submit" value="Process">
 
 		 </form>
         </div>
     </div>
-    <div id="output">
-      <h2>Output</h2>
-      <img id="output_image" src="">
-  </div>
 
 </body>

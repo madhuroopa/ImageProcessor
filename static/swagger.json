@@ -1,37 +1,48 @@
 {
-  "openapi": "3.0.2",
+  "openapi": "3.0.0",
   "info": {
     "title": "Image Processor",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "description": "A Flask-based JSON-RPC API for processing images"
   },
   "servers": [
     {
-      "url": "http://localhost:5000"
+      "url": "http://localhost:5000/",
+      "description": "Local development server"
     }
   ],
   "paths": {
     "/process_image": {
       "post": {
-        "summary": "Process image with specified operations",
+        "tags": [
+          "Image Processor"
+        ],
+        "summary": "Process an image with a set of operations",
         "requestBody": {
+          "description": "The image data and operations to apply",
           "content": {
             "multipart/form-data": {
               "schema": {
                 "type": "object",
                 "properties": {
                   "json_file": {
+                    "description": "A JSON file with a list of operations to apply",
                     "type": "string",
                     "format": "binary"
                   },
                   "image_file": {
+                    "description": "The image file to process",
                     "type": "string",
                     "format": "binary"
                   },
-                  "operations": {
+                  "operation[]": {
+                    "in": "formData",
+                    "description": "A list of operations to apply if a JSON file is not provided",
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": [
+
+                      "type": "string",
+                      "enum": [
                         "flip_horizontal",
                         "flip_vertical",
                         "rotate_left",
@@ -44,16 +55,16 @@
                     }
                   },
                   "angle": {
-                    "type": "integer",
-                    "format": "int32"
+                    "description": "The angle to rotate the image if the `rotate` operation is included",
+                    "type": "integer"
                   },
                   "width": {
-                    "type": "integer",
-                    "format": "int32"
+                    "description": "The new width of the image if the `resize` operation is included",
+                    "type": "integer"
                   },
                   "height": {
-                    "type": "integer",
-                    "format": "int32"
+                    "description": "The new height of the image if the `resize` operation is included",
+                    "type": "integer"
                   }
                 },
                 "required": [
@@ -64,26 +75,36 @@
           }
         },
         "responses": {
-          "Success": {
-            "description": "Successful response",
+          "200": {
+            "description": "The processed image and optional thumbnails",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "result": {
+                    "image": {
+                      "description": "The base64-encoded JPEG data for the processed image",
                       "type": "string"
+                    },
+                    "thumbnails": {
+                      "description": "A list of base64-encoded JPEG thumbnail data",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
               }
             }
           },
-          "default": {
-            "description": "Unknown error occurred"
+          "400": {
+            "description": "Invalid request data"
+          },
+          "500": {
+            "description": "Internal server error"
           }
-        },
-        "x-jsonrpc-endpoint": "ImageProcessor.process"
+        }
       }
     }
   },
